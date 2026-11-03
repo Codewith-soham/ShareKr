@@ -1,0 +1,424 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum PoolVisibility {
+  GENERAL
+  WOMEN_ONLY
+}
+
+enum JourneyType {
+  IMMEDIATE
+  SCHEDULED
+}
+
+enum PoolStatus {
+  OPEN
+  READY
+  EXPIRED
+  CANCELLED
+}
+
+enum PoolExpirationReason {
+  JOIN_DEADLINE_REACHED
+  SCHEDULED_DEPARTURE_REACHED
+  READY_TIMEOUT
+}
+
+enum PoolMemberStatus {
+  ACTIVE
+  LEFT
+  REMOVED
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+}
+
+enum NotificationType {
+  MEMBER_JOINED
+  MEMBER_LEFT
+  MEMBER_REMOVED
+  POOL_READY
+  POOL_EXPIRED
+  POOL_CANCELLED
+  DEPARTURE_APPROACHING
+  DEPARTURE_REMINDER
+  ACCOUNT_SUSPENDED
+}
+
+enum DestinationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum FeedbackCategory {
+  SUGGESTION
+  TECHNICAL_PROBLEM
+  EXPERIENCE
+  OTHER
+}
+
+enum FeedbackStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+}
+
+enum AdminRoleType {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+}
+
+// ============================================================
+// 1. USERS
+// ============================================================
+
+model User {
+  id              String        @id @default(uuid()) @db.Uuid
+  fullName        String        @map("full_name") @db.VarChar(120)
+  email           String        @unique @db.VarChar(255)
+  phone           String        @unique @db.VarChar(20)
+  passwordHash    String?       @map("password_hash")
+  googleSubject   String?       @unique @map("google_subject")
+  gender          Gender
+  profileImageUrl String?       @map("profile_image_url")
+  phoneVerifiedAt DateTime?     @map("phone_verified_at") @db.Timestamptz(6)
+  tokenVersion    Int           @default(0) @map("token_version")
+  accountStatus   AccountStatus @default(ACTIVE) @map("account_status")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  createdPools       Pool[]              @relation("PoolCreator")
+  memberships        PoolMember[]
+  submittedReports  PoolReport[]        @relation("ReportReporter")
+  receivedReports   PoolReport[]        @relation("ReportReportedUser")
+  blocksInitiated    UserBlock[]         @relation("Blocker")
+  blocksReceived     UserBlock[]         @relation("BlockedUser")
+  notifications      Notification[]
+  poolEvents         PoolEvent[]
+  destinationRequests DestinationRequest[]
+  feedbackEntries    Feedback[]
+  adminRole          AdminRole?
+  pushSubscriptions  PushSubscription[]
+
+  @@index([accountStatus])
+  @@index([createdAt])
+  @@map("users")
+}
+
+// ============================================================
+// 2. DESTINATIONS
+// ============================================================
+
+model Destination {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(150)
+  description String?  @db.VarChar(500)
+  address     String?  @db.VarChar(500)
+  latitude    Float?
+  longitude   Float?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  pools              Pool[]
+  destinationRequests DestinationRequest[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("destinations")
+}
+
+// ============================================================
+// 3. POOLS
+// ============================================================
+
+model Pool {
+  id              String        @id @default(uuid()) @db.Uuid
+  creatorId       String        @map("creator_id") @db.Uuid
+  destinationId   String        @map("destination_id") @db.Uuid
+
+  visibility      PoolVisibility @default(GENERAL)
+  journeyType     JourneyType    @map("journey_type")
+  status          PoolStatus     @default(OPEN)
+
+  pickupAddress  String  @map("pickup_address") @db.VarChar(500)
+  pickupLatitude Float   @map("pickup_latitude")
+  pickupLongitude Float  @map("pickup_longitude")
+
+  departureTime DateTime @map("departure_time") @db.Timestamptz(6)
+  joinDeadline  DateTime @map("join_deadline") @db.Timestamptz(6)
+
+  capacity Int
+
+  lockedAt          DateTime? @map("locked_at") @db.Timestamptz(6)
+  readyAt           DateTime? @map("ready_at") @db.Timestamptz(6)
+  closedAt          DateTime? @map("closed_at") @db.Timestamptz(6)
+  cancelledBy       String?   @map("cancelled_by") @db.Uuid
+  cancelledAt       DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  cancellationReason String?  @map("cancellation_reason") @db.VarChar(500)
+  expirationReason  PoolExpirationReason? @map("expiration_reason")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  creator      User        @relation("PoolCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  destination  Destination @relation(fields: [destinationId], references: [id], onDelete: Restrict)
+  members      PoolMember[]
+  reports      PoolReport[]
+  notifications Notification[]
+  events       PoolEvent[]
+
+  @@index([creatorId])
+  @@index([destinationId, status])
+  @@index([status, departureTime])
+  @@index([status, joinDeadline])
+  @@index([visibility, status])
+  @@index([createdAt])
+  @@map("pools")
+}
+
+// ============================================================
+// 4. POOL MEMBERS
+// ============================================================
+
+model PoolMember {
+  id       String           @id @default(uuid()) @db.Uuid
+  poolId   String           @map("pool_id") @db.Uuid
+  userId   String           @map("user_id") @db.Uuid
+  status   PoolMemberStatus @default(ACTIVE)
+
+  joinedAt  DateTime  @default(now()) @map("joined_at") @db.Timestamptz(6)
+  leftAt    DateTime? @map("left_at") @db.Timestamptz(6)
+  removedAt DateTime? @map("removed_at") @db.Timestamptz(6)
+  removalReason String? @map("removal_reason") @db.VarChar(500)
+
+  pool Pool @relation(fields: [poolId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([poolId, status])
+  @@index([userId, status])
+  @@index([joinedAt])
+  @@map("pool_members")
+}
+
+// ============================================================
+// 5. POOL REPORTS
+// ============================================================
+
+model PoolReport {
+  id              String       @id @default(uuid()) @db.Uuid
+  reporterId      String       @map("reporter_id") @db.Uuid
+  reportedUserId  String?      @map("reported_user_id") @db.Uuid
+  poolId          String?      @map("pool_id") @db.Uuid
+
+  reason      String  @db.VarChar(120)
+  description String? @db.VarChar(2000)
+  status      ReportStatus @default(PENDING)
+
+  reviewedBy String?   @map("reviewed_by") @db.Uuid
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  resolutionNotes String? @map("resolution_notes") @db.VarChar(2000)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  reporter     User  @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+  reportedUser User? @relation("ReportReportedUser", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  pool         Pool? @relation(fields: [poolId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([poolId])
+  @@map("pool_reports")
+}
+
+// ============================================================
+// 6. USER BLOCKS
+// ============================================================
+
+model UserBlock {
+  id        String   @id @default(uuid()) @db.Uuid
+  blockerId String   @map("blocker_id") @db.Uuid
+  blockedId String   @map("blocked_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Restrict)
+  blocked User @relation("BlockedUser", fields: [blockedId], references: [id], onDelete: Restrict)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("user_blocks")
+}
+
+// ============================================================
+// 7. NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id      String           @id @default(uuid()) @db.Uuid
+  userId  String           @map("user_id") @db.Uuid
+  poolId  String?          @map("pool_id") @db.Uuid
+  type    NotificationType
+
+  title   String  @db.VarChar(150)
+  message String  @db.VarChar(1000)
+
+  isRead Boolean   @default(false) @map("is_read")
+  readAt DateTime? @map("read_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  pool Pool? @relation(fields: [poolId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead, createdAt])
+  @@index([poolId])
+  @@map("notifications")
+}
+
+// ============================================================
+// 8. POOL EVENTS
+// ============================================================
+
+model PoolEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  poolId    String   @map("pool_id") @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+
+  eventType String   @map("event_type") @db.VarChar(100)
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  pool Pool  @relation(fields: [poolId], references: [id], onDelete: Restrict)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([poolId, createdAt])
+  @@index([userId, createdAt])
+  @@index([eventType])
+  @@map("pool_events")
+}
+
+// ============================================================
+// 9. DESTINATION REQUESTS
+// ============================================================
+
+model DestinationRequest {
+  id          String @id @default(uuid()) @db.Uuid
+  userId      String @map("user_id") @db.Uuid
+  destinationId String? @map("destination_id") @db.Uuid
+
+  requestedName    String  @map("requested_name") @db.VarChar(150)
+  requestedAddress String? @map("requested_address") @db.VarChar(500)
+  latitude         Float?
+  longitude        Float?
+
+  status DestinationRequestStatus @default(PENDING)
+
+  reviewedBy String?   @map("reviewed_by") @db.Uuid
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  adminNotes String?   @map("admin_notes") @db.VarChar(1000)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  destination Destination? @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("destination_requests")
+}
+
+// ============================================================
+// 10. FEEDBACK
+// ============================================================
+
+model Feedback {
+  id          String @id @default(uuid()) @db.Uuid
+  userId      String @map("user_id") @db.Uuid
+  category    FeedbackCategory
+  description String @db.VarChar(3000)
+
+  status FeedbackStatus @default(PENDING)
+
+  reviewedBy String?   @map("reviewed_by") @db.Uuid
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  adminNotes String?   @map("admin_notes") @db.VarChar(2000)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("feedback")
+}
+
+// ============================================================
+// 11. ADMIN ROLES
+// ============================================================
+
+model AdminRole {
+  id        String        @id @default(uuid()) @db.Uuid
+  userId    String        @unique @map("user_id") @db.Uuid
+  role      AdminRoleType
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("admin_roles")
+}
+
+// ============================================================
+// 12. PUSH SUBSCRIPTIONS
+// ============================================================
+
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.VarChar(2048)
+  deviceType String? @map("device_type") @db.VarChar(50)
+  isActive  Boolean  @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, isActive])
+  @@map("push_subscriptions")
+}

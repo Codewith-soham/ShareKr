@@ -701,4 +701,4 @@ Do not build future features until the V1 use case is working reliably.
 
 This document defines the proposed development standards for ShareKar V1.
 
-**Status:** Draft — awaiting review and approval.
+**Status:** Draft — approved
