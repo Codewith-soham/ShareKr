@@ -1,128 +1,194 @@
 # ShareKar — Project Overview
 
-**Document:** Project Overview  
-**Product Name:** ShareKar *(working name)*  
+**Document:** 01 — Project Overview  
+**Project:** ShareKar  
 **Version:** 1.0  
-**Project Stage:** V1 — Local MVP  
-**Initial Launch Area:** NL Complex and nearby areas, Dahisar East, Mumbai
+**Status:** Approved  
+**Product Stage:** V1 — Local MVP  
+**Initial Launch Area:** NL Complex and nearby areas, Dahisar East, Mumbai, India
 
-## 1. Project Introduction
+---
 
-ShareKar is a mobile-first passenger pooling platform designed to help local commuters find other people travelling towards the same destination at similar times.
+## 1. Introduction
 
-The platform allows passengers to discover or create shared travel pools, connect with other commuters, and coordinate travelling together in an independently available auto-rickshaw.
+ShareKar is a local commuter coordination platform that helps people travelling to the same destination at similar times connect with one another and share an independently available auto ride.
 
-The initial objective is to make everyday commuting more affordable and convenient by helping passengers find others with whom they can share their journey.
+The platform allows users to create or discover passenger pools based on destination, pickup location, and departure time.
+
+ShareKar coordinates passengers. It does not hire drivers, book autos, or handle transportation payments.
 
 ## 2. Problem Statement
 
-Commuters travelling to nearby destinations often face difficulty finding other passengers travelling in the same direction at similar times.
+Many commuters travel along similar routes every day but often travel individually because they cannot easily find other passengers going in the same direction.
 
-As a result:
-- Passengers may have to pay the full auto-rickshaw fare individually.
-- Finding people to share a ride can be inconvenient.
-- People who would be willing to share a ride may not know who else is travelling nearby.
+This creates an opportunity for a platform that helps commuters discover one another and coordinate their journeys.
 
-ShareKar aims to address this problem by providing a common platform where commuters can find and coordinate with one another.
+ShareKar aims to address this problem through location-based and time-based passenger matching.
 
 ## 3. Product Vision
 
-The initial vision is to help local commuters find people travelling in the same direction and share auto-rickshaw rides.
+To make local commuting more convenient by helping people travelling in the same direction discover and coordinate with one another.
 
-The product will begin with a small, focused launch area. Expansion into other locations will be considered after validating the initial use case.
+The long-term vision is to expand beyond the initial locality and support passenger coordination across multiple areas and destinations.
 
-## 4. Initial Target Audience
+## 4. Target Audience
 
-The first target audience consists of daily commuters living in or around:
+- Daily office commuters.
+- College and school students.
+- People travelling regularly to railway stations.
+- Local residents travelling along common routes.
+- Commuters looking to coordinate with other passengers.
 
-**NL Complex and nearby areas, Dahisar East, Mumbai.**
+## 5. Initial Launch Strategy
 
-The initial destination will be:
+The first version will focus on **NL Complex and nearby areas in Dahisar East, Mumbai**.
 
-**Dahisar Railway Station.**
+The initial launch will be geographically limited to maintain sufficient passenger density and validate the core use case.
 
-The first version will focus on validating this specific commuting route rather than launching across multiple locations.
+Destinations will be managed through an admin-controlled destination directory. Users can request missing destinations, which administrators can review and add.
 
-## 5. Core Value Proposition
+## 6. Core Product Concept
 
-ShareKar will prioritize the following benefits in order:
+ShareKar uses passenger pools.
 
-1. **Reduce individual travel costs** by helping passengers share an auto-rickshaw journey.
-2. **Make it easier to find passengers** travelling towards the same destination.
-3. **Improve daily commuting convenience** through organized passenger coordination.
-4. **Help commuters find compatible travel partners** based on destination and departure time.
+A user can:
 
-## 6. Initial Product Scope — V1
+1. Create a pool by selecting a destination.
+2. Select a pickup location.
+3. Set a departure time and joining deadline.
+4. Choose the pool capacity.
+5. Allow other eligible commuters to discover and join.
+6. Meet other passengers at the agreed pickup point.
+7. Independently arrange an available auto and the fare with its driver.
 
-The first version will include:
+A pool represents passenger coordination, not a confirmed vehicle booking.
 
-- User registration and phone verification.
-- User profiles.
-- Creating passenger pools.
-- Discovering available pools.
-- Joining and leaving pools.
-- Immediate and scheduled journeys.
-- Fixed pickup points and destinations.
+## 7. V1 Product Scope
+
+### Authentication and Profiles
+- User registration and login.
+- OTP-based verification.
+- Mandatory user profile details.
+- Profile image upload.
+- Profile management.
+
+### Pool Management
+- Immediate and scheduled pools.
+- Pickup and destination selection.
+- Pool capacity of 1–3 passengers.
+- Pool discovery and joining.
+- Pool cancellation and lifecycle management.
+- Pool history.
+
+### Matching and Discovery
+- Destination-based matching.
+- Departure-time matching.
+- Pickup proximity filtering.
+- Manual location selection and GPS-based location selection.
 - General and women-only pools.
-- Pool capacity and joining deadlines.
-- Pool status management.
+
+### Notifications
 - In-app notifications.
-- Reporting and blocking functionality.
+- Push notifications where supported.
+- Pool membership and lifecycle updates.
+- Scheduled departure reminders.
 
-The platform will coordinate passengers. It will not hire drivers, provide driver accounts, book auto-rickshaws, or process ride payments in V1. Passengers will independently arrange the auto-rickshaw and fare with the driver.
+### Safety
+- User reporting.
+- Pool reporting.
+- User blocking.
+- Backend-enforced eligibility rules.
 
-## 7. Pilot Launch Strategy
+### Administration
+- User management.
+- Destination management.
+- Pool moderation.
+- Report management.
+- Feedback review.
 
-ShareKar will initially operate within NL Complex and nearby areas in Dahisar East.
-
-The first use case will focus on commuters travelling towards Dahisar Railway Station.
-
-The pilot will help evaluate:
-- Whether enough commuters are interested in sharing rides.
-- Whether passengers can find compatible pools.
-- Whether pools form consistently.
-- Whether the service makes daily commuting more affordable and convenient.
-
-Expansion will be considered after evaluating actual pilot usage.
-
-## 8. Pilot Success Criteria
-
-The initial target is:
-
-**20 Daily Active Users (DAU).**
-
-An active user is someone who regularly engages with the app's core functionality, such as:
-- Creating a passenger pool.
-- Discovering available pools.
-- Joining a passenger pool.
-- Managing an existing pool.
-
-Simply registering or opening the application will not count as meaningful core activity.
-
-## 9. Long-Term Direction
-
-The immediate priority is to build and validate ShareKar in the initial locality.
-
-Future expansion will depend on user adoption, successful pool formation, commuter feedback, and the sustainability of the operating model.
-
-The product should be designed with a maintainable and scalable technical foundation without introducing unnecessary complexity into the initial MVP.
-
-## 10. Project Technology Stack
+## 8. Technology Stack
 
 | Layer | Technology |
 |---|---|
 | Frontend | React.js + TypeScript |
 | Styling | Tailwind CSS |
+| Build Tool | Vite |
 | Backend | Node.js + Express.js + TypeScript |
 | Database | PostgreSQL |
 | ORM | Prisma |
-| Frontend deployment | Vercel |
-| Backend deployment | Render |
+| API | REST |
+| Validation | Zod |
+| Testing | Vitest, React Testing Library, Supertest, Playwright |
 | Containerization | Docker + Docker Compose |
-| Version control | Git + GitHub |
+| Version Control | Git + GitHub |
 
-## 11. Initial Product Positioning
+The project follows a zero-cost-first development approach. External providers must be evaluated for free-tier availability and limitations.
 
-ShareKar is a passenger coordination and pooling platform focused on helping local commuters share everyday auto-rickshaw journeys.
+## 9. Architecture Overview
 
-Its initial purpose is to solve a focused local commuting problem before considering broader expansion.
+ShareKar follows a modular monolith architecture in a monorepo.
+
+- React SPA for the frontend.
+- Express.js REST API for backend operations.
+- PostgreSQL for relational data.
+- Prisma for database access and migrations.
+- Feature-based backend modules.
+- Shared TypeScript types and validation schemas.
+- In-process background scheduling for the initial pilot.
+
+## 10. Business Model and Platform Responsibility
+
+ShareKar is a passenger coordination platform.
+
+The platform:
+- Helps passengers discover compatible commuters.
+- Provides pool creation and joining functionality.
+- Stores pool and participation information.
+- Sends relevant notifications.
+
+The platform does not:
+- Hire or employ drivers.
+- Provide driver accounts.
+- Book or dispatch autos.
+- Set or estimate fares.
+- Collect or split transportation payments.
+
+Passengers independently arrange the vehicle and fare with the driver.
+
+## 11. Pilot Success Metrics
+
+The initial pilot target is **20 Daily Active Users (DAU)**.
+
+An active user means someone who regularly engages with core functionality, such as creating, discovering, joining, or managing pools. Merely registering or opening the application does not count as meaningful active usage.
+
+Additional validation should measure:
+- Number of pools created.
+- Number of successful pool joins.
+- Number of pools reaching READY status.
+- Repeat usage.
+- User feedback.
+- Whether sufficient local passenger density exists.
+
+The pilot should validate actual commuter behaviour rather than relying only on survey interest.
+
+## 12. Long-Term Direction
+
+Potential future improvements include:
+- Expansion into additional localities.
+- Phone OTP verification.
+- Government ID verification.
+- Additional regional languages.
+- Improved matching and real-time updates.
+- Enhanced moderation and safety features.
+
+Future development will depend on pilot results and user feedback.
+
+## 13. Project Status
+
+ShareKar is in the V1 local MVP development stage.
+
+The product requirements, business rules, database design, architecture, API specification, development guidelines, and testing strategy have been approved as the baseline for implementation.
+
+---
+
+**ShareKar — Better journeys begin together.**
