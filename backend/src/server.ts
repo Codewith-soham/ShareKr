@@ -1,15 +1,20 @@
-import "dotenv/config";
-import { app } from "./app.js";
-import { prisma } from "./lib/prisma.js";
+import 'dotenv/config';
+import { app } from './app.js';
+import { env } from './config/env.js';
+import { startAuthCleanupJob } from './jobs/auth-cleanup.js';
+import { prisma } from './lib/prisma.js';
 
-const port = Number(process.env.PORT) || 8000;
+const port = env.PORT;
 
 const server = app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
 
+const stopAuthCleanup = startAuthCleanupJob();
+
 const shutdown = async (signal: string) => {
   console.log(`Received ${signal}. Shutting down gracefully...`);
+  stopAuthCleanup();
   server.close(async () => {
     try {
       await prisma.$disconnect();
@@ -20,5 +25,5 @@ const shutdown = async (signal: string) => {
   });
 };
 
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
