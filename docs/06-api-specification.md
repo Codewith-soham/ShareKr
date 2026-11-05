@@ -175,6 +175,15 @@ The access token is sent through:
 
 The frontend must not store refresh tokens in local storage.
 
+### 4.4.1 Implemented auth behaviour (backend)
+
+- Access token: HS256 JWT, 15 min, claims `sub`, `sid` (session id), `tv` (token_version). Validated against the DB on every request (session live, account ACTIVE, `tv` matches).
+- Refresh token: opaque random value, SHA-256 hash stored in `auth_sessions`; cookie `sk_refresh` (HttpOnly, SameSite=Strict, Path=/api/v1/auth); rotated on every refresh, absolute 14-day lifetime; reuse of a rotated token revokes the whole token family.
+- `/auth/refresh` and `/auth/logout` require the header `X-Requested-With: sharekar` and an allowlisted `Origin`.
+- `/auth/register`, `/auth/login` and `/auth/otp/send` return the same response whether or not the email is registered. The user row is created only after the OTP is verified.
+- OTP: 6 digits, HMAC-SHA256 with a server pepper, 5 min TTL, 3 attempts, single-use, 60 s resend cooldown, 5 sends per email per hour.
+- Profile completion is `PATCH /users/me` (phone, gender, profile image). Core features require `profile_completed_at`; the phone-verification gate is still pending (email OTP pilot).
+
 ### 4.5 Authorization rules
 
 - Public access is limited to the authentication flow and health-check endpoint.

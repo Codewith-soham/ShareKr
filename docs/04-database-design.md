@@ -132,6 +132,8 @@ The diagram shows the main relationships. Optional relationships, such as a repo
 - Account status is controlled by the backend and authorized administrators.
 - `women_pool_eligible` does not need to be stored separately in V1. It can be derived from `gender = FEMALE`, provided the backend applies the same rule consistently.
 
+**Auth schema update:** `phone` and `gender` are nullable until profile completion; `email_verified_at` and `profile_completed_at` were added. Two tables back authentication: `auth_otp_challenges` (hashed OTPs, attempts, expiry) and `auth_sessions` (hashed refresh tokens with `family_id`, rotation via `replaced_by_id`, revocation).
+
 **Authentication note:** Google login alone does not satisfy phone verification. The user must still complete SMS OTP verification.
 
 ## 5.2 `destinations`
