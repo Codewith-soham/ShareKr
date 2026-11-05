@@ -38,6 +38,8 @@ skills-lock.json
 **/.claude/
 **/.windsurf/
 **/skills-lock.json
+CLAUDE.md
+**/CLAUDE.md
 
 # IDE & Editor settings
 .vscode/
