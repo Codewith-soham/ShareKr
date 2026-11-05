@@ -91,6 +91,11 @@ enum FeedbackStatus {
   RESOLVED
 }
 
+enum OtpPurpose {
+  REGISTER
+  LOGIN
+}
+
 enum AdminRoleType {
   SUPER_ADMIN
   ADMIN
@@ -105,12 +110,14 @@ model User {
   id              String        @id @default(uuid()) @db.Uuid
   fullName        String        @map("full_name") @db.VarChar(120)
   email           String        @unique @db.VarChar(255)
-  phone           String        @unique @db.VarChar(20)
+  phone           String?       @unique @db.VarChar(20)
   passwordHash    String?       @map("password_hash")
   googleSubject   String?       @unique @map("google_subject")
-  gender          Gender
+  gender          Gender?
   profileImageUrl String?       @map("profile_image_url")
+  emailVerifiedAt    DateTime?  @map("email_verified_at") @db.Timestamptz(6)
   phoneVerifiedAt DateTime?     @map("phone_verified_at") @db.Timestamptz(6)
+  profileCompletedAt DateTime?  @map("profile_completed_at") @db.Timestamptz(6)
   tokenVersion    Int           @default(0) @map("token_version")
   accountStatus   AccountStatus @default(ACTIVE) @map("account_status")
 
@@ -130,6 +137,7 @@ model User {
   feedbackEntries    Feedback[]
   adminRole          AdminRole?
   pushSubscriptions  PushSubscription[]
+  authSessions       AuthSession[]
 
   @@index([accountStatus])
   @@index([createdAt])
@@ -421,4 +429,48 @@ model PushSubscription {
 
   @@index([userId, isActive])
   @@map("push_subscriptions")
+}
+
+
+// ============================================================
+// AUTH: OTP CHALLENGES AND REFRESH SESSIONS
+// ============================================================
+
+model AuthOtpChallenge {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @db.VarChar(255)
+  purpose         OtpPurpose
+  codeHash        String     @map("code_hash")
+  attempts        Int        @default(0)
+  pendingFullName String?    @map("pending_full_name") @db.VarChar(120)
+  expiresAt       DateTime   @map("expires_at") @db.Timestamptz(6)
+  consumedAt      DateTime?  @map("consumed_at") @db.Timestamptz(6)
+  invalidatedAt   DateTime?  @map("invalidated_at") @db.Timestamptz(6)
+  ipAddress       String?    @map("ip_address") @db.VarChar(64)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([email, createdAt])
+  @@index([expiresAt])
+  @@map("auth_otp_challenges")
+}
+
+model AuthSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  familyId         String    @map("family_id") @db.Uuid
+  refreshTokenHash String    @unique @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(6)
+  replacedById     String?   @map("replaced_by_id") @db.Uuid
+  userAgent        String?   @map("user_agent") @db.VarChar(255)
+  ipAddress        String?   @map("ip_address") @db.VarChar(64)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt       DateTime  @default(now()) @map("last_used_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("auth_sessions")
 }
