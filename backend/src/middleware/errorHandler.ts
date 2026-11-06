@@ -20,6 +20,31 @@ export const errorHandler: ErrorRequestHandler = (
     return;
   }
 
+  // Errors raised by express.json() / urlencoded() are client mistakes, not server faults.
+  const bodyError = err as { type?: string };
+  if (bodyError?.type === "entity.too.large") {
+    res.status(413).json({
+      statusCode: 413,
+      success: false,
+      message: "Request body too large",
+      errorCode: "PAYLOAD_TOO_LARGE",
+      data: null,
+      details: null,
+    });
+    return;
+  }
+  if (bodyError?.type === "entity.parse.failed") {
+    res.status(400).json({
+      statusCode: 400,
+      success: false,
+      message: "Malformed JSON body",
+      errorCode: "INVALID_JSON",
+      data: null,
+      details: null,
+    });
+    return;
+  }
+
   const error = err instanceof Error ? err : new Error(String(err));
   console.error("Unhandled error:", error.message, error.stack);
 

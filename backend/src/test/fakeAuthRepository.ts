@@ -105,10 +105,7 @@ export class FakeAuthRepository implements AuthRepository {
     return record;
   }
 
-  async issueChallenge(
-    data: NewChallenge,
-    policy: IssuePolicy,
-  ): Promise<IssueResult> {
+  async issueChallenge(data: NewChallenge, policy: IssuePolicy): Promise<IssueResult> {
     const latest = await this.findLatestChallenge(data.email, data.purpose);
     if (
       latest &&

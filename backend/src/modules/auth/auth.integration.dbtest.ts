@@ -34,7 +34,11 @@ const newChallenge = (email = EMAIL, code = '123456') =>
     ipAddress: null,
   });
 
-const newSession = (userId: string, familyId = crypto.randomUUID(), token = crypto.randomUUID()) => ({
+const newSession = (
+  userId: string,
+  familyId = crypto.randomUUID(),
+  token = crypto.randomUUID(),
+) => ({
   userId,
   familyId,
   refreshTokenHash: hashRefreshToken(token),

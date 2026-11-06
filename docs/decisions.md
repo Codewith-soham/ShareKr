@@ -15,6 +15,11 @@ How to add an entry: copy the template, fill it in, put it under this line.
 
 ---
 
+## 2026-11-06: Oversized or malformed request bodies return 413 / 400, not 500
+**Decision:** The central error handler now recognises body-parser errors. A body over 10kb gives `413 PAYLOAD_TOO_LARGE`, and broken JSON gives `400 INVALID_JSON`.
+**Why:** A live smoke test showed a 12kb body returned `500 Internal server error` and logged a scary stack trace. That is a client mistake, not a server fault, and 500s would hide real problems in monitoring.
+**Consequences / watch out for:** Real unexpected errors still return a generic 500 with no details. The new cases are covered by `src/middleware/errorHandler.test.ts`.
+
 ## 2026-11-06: Serialize OTP issuing per email in the database
 **Decision:** The cooldown check, the 5-per-hour cap and "invalidate the old code, create a new one" now run as one step inside a single database transaction, guarded by a per-email Postgres advisory lock (`issueChallenge` in `auth.repository.ts`).
 **Why:** A real-database test showed that 8 simultaneous register requests for one email sent 8 emails and left 8 live codes. Each check passed independently, so parallel requests bypassed both the cooldown and the hourly cap. Unit tests could not catch this because the in-memory fake repo has no concurrency.
