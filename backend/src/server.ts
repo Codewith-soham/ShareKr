@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { app } from './app.js';
 import { env } from './config/env.js';
+import { startAccountAnonymizeJob } from './jobs/account-anonymize.js';
 import { startAuthCleanupJob } from './jobs/auth-cleanup.js';
 import { prisma } from './lib/prisma.js';
 
@@ -11,10 +12,12 @@ const server = app.listen(port, () => {
 });
 
 const stopAuthCleanup = startAuthCleanupJob();
+const stopAccountAnonymize = startAccountAnonymizeJob();
 
 const shutdown = async (signal: string) => {
   console.log(`Received ${signal}. Shutting down gracefully...`);
   stopAuthCleanup();
+  stopAccountAnonymize();
   server.close(async () => {
     try {
       await prisma.$disconnect();
