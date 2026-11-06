@@ -5,3 +5,6 @@ process.env.JWT_ACCESS_SECRET = 'test-access-secret-test-access-secret-012345678
 process.env.OTP_PEPPER = 'test-otp-pepper-test-otp-pepper-0123456789';
 process.env.CORS_ORIGINS = 'http://localhost:5173';
 process.env.OTP_DELIVERY = 'console';
+process.env.CLOUDINARY_CLOUD_NAME = 'sharekar-test';
+process.env.CLOUDINARY_API_KEY = '123456789012345';
+process.env.CLOUDINARY_API_SECRET = 'test-cloudinary-secret';

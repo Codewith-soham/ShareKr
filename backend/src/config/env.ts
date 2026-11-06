@@ -28,6 +28,14 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
+
+  // Profile images (Cloudinary). Optional in dev; the upload endpoint answers 503 without them.
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
+
+  // Days a deleted account is kept (deactivated) before personal data is wiped.
+  ACCOUNT_RETENTION_DAYS: z.coerce.number().int().min(0).default(30),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -51,6 +59,9 @@ if (data.NODE_ENV === 'production') {
   }
   if (!data.COOKIE_SECURE) {
     throw new Error('COOKIE_SECURE must be true in production');
+  }
+  if (!data.CLOUDINARY_CLOUD_NAME || !data.CLOUDINARY_API_KEY || !data.CLOUDINARY_API_SECRET) {
+    throw new Error('CLOUDINARY_* variables must be set in production');
   }
 }
 
