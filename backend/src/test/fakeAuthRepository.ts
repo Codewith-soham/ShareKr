@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import type { User } from '../generated/prisma/client.js';
 import type {
   AuthRepository,
+  IssuePolicy,
+  IssueResult,
   NewChallenge,
   NewSession,
   OtpChallengeRecord,
@@ -101,6 +103,27 @@ export class FakeAuthRepository implements AuthRepository {
     };
     this.challenges.set(record.id, record);
     return record;
+  }
+
+  async issueChallenge(
+    data: NewChallenge,
+    policy: IssuePolicy,
+  ): Promise<IssueResult> {
+    const latest = await this.findLatestChallenge(data.email, data.purpose);
+    if (
+      latest &&
+      !latest.consumedAt &&
+      !latest.invalidatedAt &&
+      policy.now.getTime() - latest.createdAt.getTime() < policy.cooldownMs
+    ) {
+      return { status: 'cooldown', challenge: latest };
+    }
+    const sent = await this.countChallengesSince(
+      data.email,
+      new Date(policy.now.getTime() - 60 * 60 * 1000),
+    );
+    if (sent >= policy.maxPerHour) return { status: 'capped' };
+    return { status: 'created', challenge: await this.replaceChallenge(data) };
   }
 
   async incrementAttempts(id: string) {

@@ -41,6 +41,17 @@ export interface NewSession {
   ipAddress: string | null;
 }
 
+export interface IssuePolicy {
+  cooldownMs: number;
+  maxPerHour: number;
+  now: Date;
+}
+
+export type IssueResult =
+  | { status: 'created'; challenge: OtpChallengeRecord }
+  | { status: 'cooldown'; challenge: OtpChallengeRecord }
+  | { status: 'capped' };
+
 export interface AuthRepository {
   findUserByEmail(email: string): Promise<User | null>;
   findUserById(id: string): Promise<User | null>;
@@ -52,6 +63,9 @@ export interface AuthRepository {
   findChallenge(id: string): Promise<OtpChallengeRecord | null>;
   // Invalidates active challenges for the email and creates a new one atomically.
   replaceChallenge(data: NewChallenge): Promise<OtpChallengeRecord>;
+  // Cooldown check + hourly cap + replace, serialized per email so concurrent
+  // requests cannot each slip past the checks and send their own code.
+  issueChallenge(data: NewChallenge, policy: IssuePolicy): Promise<IssueResult>;
   // Atomically increments and returns the new attempt count.
   incrementAttempts(id: string): Promise<number>;
   // Returns true only for the single caller that wins the consume race.
@@ -78,6 +92,19 @@ const sessionSelect = {
   expiresAt: true,
   revokedAt: true,
 } as const;
+
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+const lockEmail = (tx: Tx, email: string) =>
+  tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${email}))`;
+
+const replaceInTx = async (tx: Tx, data: NewChallenge) => {
+  await tx.authOtpChallenge.updateMany({
+    where: { email: data.email, consumedAt: null, invalidatedAt: null },
+    data: { invalidatedAt: new Date() },
+  });
+  return tx.authOtpChallenge.create({ data });
+};
 
 export class PrismaAuthRepository implements AuthRepository {
   findUserByEmail(email: string) {
@@ -120,11 +147,38 @@ export class PrismaAuthRepository implements AuthRepository {
 
   replaceChallenge(data: NewChallenge) {
     return prisma.$transaction(async (tx) => {
-      await tx.authOtpChallenge.updateMany({
-        where: { email: data.email, consumedAt: null, invalidatedAt: null },
-        data: { invalidatedAt: new Date() },
+      await lockEmail(tx, data.email);
+      return replaceInTx(tx, data);
+    });
+  }
+
+  issueChallenge(data: NewChallenge, policy: IssuePolicy): Promise<IssueResult> {
+    return prisma.$transaction(async (tx) => {
+      // Serializes concurrent issuance for the same email until commit.
+      await lockEmail(tx, data.email);
+
+      const latest = await tx.authOtpChallenge.findFirst({
+        where: { email: data.email, purpose: data.purpose },
+        orderBy: { createdAt: 'desc' },
       });
-      return tx.authOtpChallenge.create({ data });
+      if (
+        latest &&
+        !latest.consumedAt &&
+        !latest.invalidatedAt &&
+        policy.now.getTime() - latest.createdAt.getTime() < policy.cooldownMs
+      ) {
+        return { status: 'cooldown', challenge: latest };
+      }
+
+      const sent = await tx.authOtpChallenge.count({
+        where: {
+          email: data.email,
+          createdAt: { gte: new Date(policy.now.getTime() - 60 * 60 * 1000) },
+        },
+      });
+      if (sent >= policy.maxPerHour) return { status: 'capped' };
+
+      return { status: 'created', challenge: await replaceInTx(tx, data) };
     });
   }
 

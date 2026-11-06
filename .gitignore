@@ -63,3 +63,7 @@ Thumbs.db
 tmp/
 temp/
 scratch/
+
+# Local working logs (kept on this machine only)
+docs/explanation.md
+docs/architecture-updates.md

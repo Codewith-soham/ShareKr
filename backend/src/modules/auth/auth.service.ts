@@ -125,35 +125,28 @@ export class AuthService {
     if (!allowed) return challengeResponse(randomUUID());
 
     const now = this.now();
+    const code = generateOtpCode();
+
+    // Cooldown and hourly cap are enforced atomically per email in the repository,
+    // so concurrent requests cannot each send their own code.
+    const result = await this.repo.issueChallenge(
+      {
+        email,
+        purpose,
+        codeHash: hashOtp(code),
+        pendingFullName,
+        expiresAt: new Date(now.getTime() + OTP_TTL_MS),
+        ipAddress: meta.ipAddress,
+      },
+      { cooldownMs: OTP_RESEND_COOLDOWN_MS, maxPerHour: OTP_MAX_SENDS_PER_HOUR, now },
+    );
 
     // Cooldown: hand back the live challenge instead of sending another email.
-    const latest = await this.repo.findLatestChallenge(email, purpose);
-    if (
-      latest &&
-      !latest.consumedAt &&
-      !latest.invalidatedAt &&
-      now.getTime() - latest.createdAt.getTime() < OTP_RESEND_COOLDOWN_MS
-    ) {
-      return challengeResponse(latest.id);
-    }
-
-    // Hourly cap per email. Suppressed silently (not a 429) so the response
-    // does not differ between registered and unregistered addresses.
-    const sent = await this.repo.countChallengesSince(
-      email,
-      new Date(now.getTime() - 60 * 60 * 1000),
-    );
-    if (sent >= OTP_MAX_SENDS_PER_HOUR) return challengeResponse(randomUUID());
-
-    const code = generateOtpCode();
-    const challenge = await this.repo.replaceChallenge({
-      email,
-      purpose,
-      codeHash: hashOtp(code),
-      pendingFullName,
-      expiresAt: new Date(now.getTime() + OTP_TTL_MS),
-      ipAddress: meta.ipAddress,
-    });
+    if (result.status === 'cooldown') return challengeResponse(result.challenge.id);
+    // Hourly cap: suppressed silently (not a 429) so the response does not
+    // differ between registered and unregistered addresses.
+    if (result.status === 'capped') return challengeResponse(randomUUID());
+    const challenge = result.challenge;
 
     // Not awaited: keeps response timing the same for real and decoy paths.
     void this.sender.send(email, code).catch((error: unknown) => {
