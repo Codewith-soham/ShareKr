@@ -226,7 +226,7 @@ The frontend requests signed upload details from the backend, uploads the image 
 
 The backend must generate signed upload parameters and validate the resulting asset reference.
 
-The API must enforce allowed image formats and size limits. Exact limits will be set during implementation.
+The API must enforce allowed image formats and size limits. Limits: max 2 MB; jpg, jpeg, png, webp; one folder per user (sharekar/profiles/<userId>).
 
 ### 5.2 Account deletion
 

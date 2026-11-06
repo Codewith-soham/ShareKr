@@ -16,7 +16,7 @@ export const REFRESH_COOKIE = 'sk_refresh';
 const COOKIE_PATH = '/api/v1/auth';
 const CODE_SENT = 'If the details are valid, a code has been sent';
 
-const cookieOptions = (): CookieOptions => ({
+export const cookieOptions = (): CookieOptions => ({
   httpOnly: true,
   secure: env.COOKIE_SECURE,
   sameSite: 'strict',
