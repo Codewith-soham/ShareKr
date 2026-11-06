@@ -40,22 +40,22 @@ A user must complete registration with:
 
 - Full name
 - Email address
-- Phone number
-- Verified phone number through SMS OTP
+- Phone number (entered by the user; not SMS-verified in V1, see decisions log 2026-11-06)
+- Verified email address through email OTP
 - Gender: Male, Female, or Other
 - Profile image
 
 All fields are mandatory.
 
-Google authentication may be supported, but it does not replace phone verification.
+V1 verifies identity by email OTP only. SMS phone verification is planned for after launch.
 
 ### 3.2 Access restrictions
 
 - Guest access is not permitted.
 - Unauthenticated users cannot discover, view, create, or join pools.
-- Only active, phone-verified users with complete profiles can create or join pools.
+- Only active, email-verified users with complete profiles can create or join pools.
 - Suspended users cannot access protected application functionality.
-- The backend must validate account status and phone verification for every protected operation.
+- The backend must validate account status and profile completion for every protected operation.
 
 ### 3.3 Women-only pool eligibility
 
@@ -310,7 +310,7 @@ Before accepting a join request, verify:
 
 - User is authenticated.
 - Account is active.
-- Phone is verified.
+- Email is verified.
 - Mandatory profile is complete.
 - User is eligible for the pool visibility.
 - User is not already an active member of the pool.
@@ -350,7 +350,7 @@ The invitation:
 
 - Does not reserve a seat.
 - Does not bypass registration.
-- Does not bypass phone verification.
+- Does not bypass email verification.
 - Does not bypass gender or visibility restrictions.
 - Does not bypass capacity or one-active-pool restrictions.
 
@@ -359,7 +359,7 @@ The invitation:
 When an unauthenticated user opens an invitation link:
 
 1. Redirect to login or registration.
-2. Complete registration and phone verification.
+2. Complete registration and email verification.
 3. Return the user to the invited pool.
 4. Display the current pool details.
 5. Revalidate all joining conditions before joining.

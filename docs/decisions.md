@@ -15,6 +15,12 @@ How to add an entry: copy the template, fill it in, put it under this line.
 
 ---
 
+## 2026-11-06: V1 uses email OTP only; no SMS phone verification
+**Decision:** Users prove who they are with the email OTP. The phone number is typed by the user and shown to pool members, but it is not checked by SMS. SMS verification is planned for after launch.
+**Why:** SMS in India needs DLT registration (days to weeks) and a per-message fee, which risks the April 2027 launch and the zero-cost policy. V1 users are neighbours in one housing complex, so the community is a natural safety check.
+**Alternatives considered:** SMS OTP in V1 (cost, delay, extra provider code).
+**Consequences / watch out for:** A user could type a wrong or someone else's number, so the join screen must say phone numbers are shared and the app should never imply they are verified. Phone stays locked once set until SMS arrives. Docs 03 (sections 3.1, 3.2, 9, 10) and 06 were updated to say email-verified instead of phone-verified. The `requireProfileComplete` gate (SHARE-96) is the only access check needed.
+
 ## 2026-11-06: The 2 MB photo limit is enforced by our server, not by Cloudinary
 **Decision:** When the browser sends the photo link, the server asks Cloudinary for the stored file size (HEAD request). Over 2 MB gives 422 PROFILE_IMAGE_TOO_LARGE and the file is deleted. A link to an image that does not exist gives 422 INVALID_PROFILE_IMAGE. Deletes also ask Cloudinary to clear its CDN cache.
 **Why:** A live test showed Cloudinary's upload API refuses max_file_size as a signed parameter, so the signature cannot enforce a size. Without the check, a user could save a huge file or a link to nothing. Without cache clearing, a deleted photo can still be served from the CDN for a while, which matters for account deletion.

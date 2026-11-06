@@ -125,9 +125,9 @@ The API must use meaningful application error codes in addition to HTTP status c
 
 The initial zero-cost pilot will use **email OTP authentication**.
 
-Google login is deferred until a later release. Phone OTP remains the intended longer-term authentication method.
+Google login is deferred until a later release. SMS phone verification is planned for after launch.
 
-**Important product-policy alignment:** The approved PRD requires phone verification before users can access the main application. Email OTP does not satisfy that requirement. This specification treats email OTP as a temporary pilot deviation, not as equivalent phone verification. The PRD and Business Rules should be explicitly updated or the pilot should retain phone verification before implementation.
+**Policy decision (2026-11-06):** V1 uses email OTP only. The phone number is entered by the user and shown to pool members, but it is not SMS-verified. Docs 03 has been updated to match.
 
 ### 4.2 Authentication endpoints
 
@@ -182,7 +182,7 @@ The frontend must not store refresh tokens in local storage.
 - `/auth/refresh` and `/auth/logout` require the header `X-Requested-With: sharekar` and an allowlisted `Origin`.
 - `/auth/register`, `/auth/login` and `/auth/otp/send` return the same response whether or not the email is registered. The user row is created only after the OTP is verified.
 - OTP: 6 digits, HMAC-SHA256 with a server pepper, 5 min TTL, 3 attempts, single-use, 60 s resend cooldown, 5 sends per email per hour.
-- Profile completion is `PATCH /users/me` (phone, gender, profile image). Core features require `profile_completed_at`; the phone-verification gate is still pending (email OTP pilot).
+- Profile completion is `PATCH /users/me` (phone, gender, profile image). Core features require `profile_completed_at`. There is no phone-verification gate in V1 (email OTP only).
 
 ### 4.5 Authorization rules
 
@@ -218,7 +218,7 @@ Profile fields include:
 - Account status
 - Verification status
 
-Phone number changes, when phone authentication is introduced, must require verification of the new phone number.
+In V1 a phone number cannot be changed once set (`PHONE_CHANGE_NOT_SUPPORTED`). When SMS verification is introduced after launch, changes must require verification of the new number.
 
 ### Field visibility (what other riders can see)
 
@@ -755,7 +755,7 @@ These must not be introduced into the V1 API without a separate product decision
 
 The API structure is defined, but the following details need final decisions or configuration:
 
-1. **Authentication policy alignment:** Whether the pilot will temporarily accept email verification instead of the PRD's mandatory phone verification, and whether the PRD and Business Rules will be updated.
+1. ~~**Authentication policy alignment**~~ Decided 2026-11-06: V1 is email OTP only; SMS verification comes after launch.
 2. **OTP delivery provider:** Select an email provider compatible with the no-card/no-paid-subscription policy.
 3. **Access-token lifetime:** Choose the exact duration.
 4. **Refresh-token lifetime:** Choose the exact duration and session policy.
