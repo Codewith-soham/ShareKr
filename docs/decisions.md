@@ -15,6 +15,35 @@ How to add an entry: copy the template, fill it in, put it under this line.
 
 ---
 
+## 2026-11-06: The 2 MB photo limit is enforced by our server, not by Cloudinary
+**Decision:** When the browser sends the photo link, the server asks Cloudinary for the stored file size (HEAD request). Over 2 MB gives 422 PROFILE_IMAGE_TOO_LARGE and the file is deleted. A link to an image that does not exist gives 422 INVALID_PROFILE_IMAGE. Deletes also ask Cloudinary to clear its CDN cache.
+**Why:** A live test showed Cloudinary's upload API refuses max_file_size as a signed parameter, so the signature cannot enforce a size. Without the check, a user could save a huge file or a link to nothing. Without cache clearing, a deleted photo can still be served from the CDN for a while, which matters for account deletion.
+**Alternatives considered:** A Cloudinary upload preset with a size cap (needs dashboard setup and was not confirmed for per-upload limits). Trusting the frontend (not safe).
+**Consequences / watch out for:** Saving a profile photo now makes one extra request to Cloudinary; if Cloudinary is down the save answers 503 IMAGE_CHECK_UNAVAILABLE. The frontend should still check the size first (the signature response includes maxBytes) to give instant feedback.
+
+## 2026-11-06: Pool members can see each other's phone number
+**Decision:** Browsing riders see only "Soham K." and a photo. Active members of the same OPEN or READY pool also see the full name and phone number. Email, gender and account status are never shown to other users.
+**Why:** V1 has no chat, so the phone is the only way riders can find each other at the pickup point. Docs 03 already hide full member details until joining.
+**Alternatives considered:** Hiding phones and adding in-app chat (out of scope for V1). Showing phones to everyone (privacy risk).
+**Consequences / watch out for:** The join confirmation screen must say the number will be shared. The pool module must only use the member view for active members of an OPEN or READY pool, and the preview view everywhere else (lists, search, after leaving, cancelled or closed pools). Blocking (Sprint 13) must also hide the phone. Docs 03 section 9 should be updated to say this.
+
+## 2026-11-06: Profile images on Cloudinary; accounts deleted in two stages
+**Decision:** Profile photos are stored on Cloudinary (free tier), uploaded straight from the browser with a signature from our server. We accept only image URLs from our own Cloudinary account and the user's own folder, max 2 MB, jpg/png/webp. Deleting an account deactivates it at once (sessions revoked, cannot log in); 30 days later a daily job wipes the personal data. Deletion is refused while the user is in an active pool.
+**Why:** Cloudinary resizes and converts images for us and the docs already planned it; Cloudflare R2 is cheaper at scale but needs our own image code. The URL allow-list stops tracking pixels and other people's photos. Two-stage deletion follows docs 02 and 06 and keeps pool history valid.
+**Alternatives considered:** Cloudflare R2 (revisit if we outgrow the free tier). Auto-cancelling pools on delete (waits for Sprints 4 and 5, so for now the user must leave or cancel first).
+**Consequences / watch out for:** Needs 3 CLOUDINARY_* keys in .env (required in production). Retention is ACCOUNT_RETENTION_DAYS (default 30), still to be confirmed as the final legal number. Same email can register again only after the wipe. Phone is still not verified (see SHARE-18).
+
+## 2026-11-06: Reuse the existing Jira SHARE project instead of deleting it
+**Decision:** Jira project SHARE (board 36) keeps its 8 epics and its finished tasks, and gets a new "Launch & Marketing" epic (SHARE-14), 22 weekly sprints, 78 tasks and 68 subtasks. Sprint names are 29 characters or fewer because Jira rejects longer ones.
+**Why:** The Jira connector cannot delete issues or sprints, and the user chose to reuse what existed.
+**Consequences / watch out for:** Sprints 1 to 5 have subtasks now; later sprints get theirs at the start of each sprint. The old Done tasks (SHARE-9 to 13) were moved to the backlog so Sprint 1 starts clean. SHARE-161 to 164 record the finished auth work. Each sprint still has to be started in Jira when its week begins.
+
+## 2026-11-06: 22 weekly sprints, 2.5 hours a day, launch around 5 to 11 Apr 2027
+**Decision:** Work is planned as 22 one-week sprints starting Monday 9 Nov 2026. The full plan is in `docs/roadmap.md`. Google Calendar has a daily 8:00 to 10:30 PM IST block (154 days) plus one all-day banner per sprint. Closed beta is sprint 11 (18 Jan 2027) and public launch is sprint 22.
+**Why:** The user can give 2 to 3 hours a day, every day. Weekly sprints match a week-by-week calendar and give fast feedback.
+**Alternatives considered:** Two-week sprints (fewer to manage but bigger scope each). Daily calendar events with a specific task each (about 154 events, too heavy to keep in step with Jira).
+**Consequences / watch out for:** Subtasks exist only for sprints 1 to 5 and get added at the start of each later sprint. Docs 03 requires SMS-verified phone numbers, but auth is email OTP only; sprint 1 must decide how phone verification works in V1. The Jira connector cannot delete issues, so old SHARE issues must be deleted by hand in Jira.
+
 ## 2026-11-06: Oversized or malformed request bodies return 413 / 400, not 500
 **Decision:** The central error handler now recognises body-parser errors. A body over 10kb gives `413 PAYLOAD_TOO_LARGE`, and broken JSON gives `400 INVALID_JSON`.
 **Why:** A live smoke test showed a 12kb body returned `500 Internal server error` and logged a scary stack trace. That is a client mistake, not a server fault, and 500s would hide real problems in monitoring.
