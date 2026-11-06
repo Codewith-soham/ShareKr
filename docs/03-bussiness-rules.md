@@ -289,6 +289,8 @@ Example creator display: `Soham K.`
 
 Full member details are available only after successful joining.
 
+"Full member details" means the member's full name, profile image and phone number, so members can reach each other at the pickup point. They are shown only to active members of an OPEN or READY pool and are hidden again after leaving or when the pool ends. Email and gender are never shown to other users. The join confirmation must tell the user that their phone number will be shared with pool members.
+
 ### 9.2 Joining process
 
 1. User selects a pool.

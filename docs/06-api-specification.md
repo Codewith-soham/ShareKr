@@ -220,6 +220,20 @@ Profile fields include:
 
 Phone number changes, when phone authentication is introduced, must require verification of the new phone number.
 
+### Field visibility (what other riders can see)
+
+`GET /users/me` and `PATCH /users/me` return the private view of the caller's own account (id, email, name, gender, account status, verification and profile-complete flags).
+
+Other users are only ever shown whitelisted views:
+
+| Viewer | Fields |
+|---|---|
+| Anyone browsing pools (before joining) | id, short name such as `Soham K.`, profile image |
+| Active member of the same OPEN or READY pool | the above plus full name and **phone number** |
+| Everyone else | nothing more. Email, gender, account status and verification fields are never shown to other users |
+
+The phone number is hidden again when the member leaves or the pool is cancelled, expired or closed.
+
 ### 5.1 Profile image upload
 
 The frontend requests signed upload details from the backend, uploads the image directly to Cloudinary, and then submits the resulting image reference through the profile update endpoint.
